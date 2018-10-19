@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>快速创建三维环境</title>
+    <link rel="stylesheet" href="freedo/Freedo/Widgets/widgets.css">
+    <link rel="stylesheet" href="static/bucket.css">
+    <link rel="stylesheet" href="static/css/qianyuan.css">
+    <link rel="stylesheet" href="freedox/FreedoX/ThirdParty/extjs/theme-gray/resources/theme-gray-all.css" />
+    <style>
+        .cesium-viewer-toolbar {
+            left: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="freedo/Freedo/Freedo.js"></script>
+    <script src="freedox/FreedoX/ThirdParty/1710_lodash/lodash.min.js"></script>
+    <script src="freedox/FreedoX/FreedoX.js"></script>
+    <script src="static/Sandcastle-header.js"></script>
+    <script type="text/javascript" src="freedox/FreedoX/ThirdParty/extjs/ext-all.js" ></script>
+    <script type="text/javascript" src="freedox/FreedoX/ThirdParty/extjs/ext-locale-zh_CN.js" ></script>
+    <div id="freedoContainer" class="fullSize">
+         <div id="cameraContainer"></div>
+         <div id="timeLineContainer"></div>
+    </div>
+    <div id="freedoContainer_before" class="halfSize"></div>
+    <div id="freedoContainer_after" class="halfSize"></div>
+    <div id="tree-panel"></div>
+    <div id="loadingOverlay">
+        <h1>Loading...</h1>
+    </div>
+    <div id="toolbar" class="toolbar"></div>
+    <div id="toolbar_measure_menu" class="toolbar"></div>
+    <div id="toolbar_imagery_menu" class="toolbar"></div>
+    <div id="toolbar_compare_menu" class="toolbar"></div>
+    <script type="text/javascript">
+        var viewer = Freedo.FdApp.createDefaultViewer('freedoContainer', {
+            homeButton: false, // 是否展示Home按钮
+
+        }, {
+            hasProvinceBoundaries: true // 是否绘制中国省界
+        });
+
+    </script>
+    <script type="text/javascript" src="static/js/qianyuan_tree.js" ></script>
+    <script type="text/javascript" src="static/js/qianyuan_util.js" ></script>
+    <script type="text/javascript" src="static/js/qianyuan_measure.js" ></script>
+    <script type="text/javascript" src="static/js/qianyuan_imagery.js" ></script>
+    <script type="text/javascript" src="static/js/FdMultiViewSync.js" ></script>
+    <script type="text/javascript" src="static/js/qianyuan_compare.js" ></script>
+    <script>
+
+
+        var opt = ['快速创建三维环境'];
+        Sandcastle.createTipsDOM(opt);
+
+        viewer.showLogo = false;
+		// var terrainManager = new Freedo.FdTools.FdTerrain(viewer);
+		// terrainManager.setTerrain("//terrain.gbim360.com/dem_zkxt", "HM", []);
+		// WETS 地形
+            // terrainManager.setTerrain([{
+            //     //capabilitiesUrl: 'http://cfgateway.gbim360.cn/freeserver-wets/services/718823a3-210d-4357-af00-44ceb0603cef/wets/1.0.0/WETSCapabilities.xml?accesskey=23a70df1-363a-4b51-96b0-d94bd2a901ac&token=b137612d-683f-44d8-8765-bc16a3ab8667'
+            //     capabilitiesUrl: 'https://cfgateway.gbim360.cn/freeserver-wets/services/4a436ebb-6066-4634-82c2-06ec7892ab50/wets/1.1.0/WETSCapabilities.xml',
+            //     queryParameters: {
+            //         token: 'f618cb81-ce36-4203-9b07-8770d665a801'
+            //     }
+            // }],'WETS',[]);
+	
+		// var pmtsManager = new Freedo.FdTools.FdPMTSManager(viewer);
+		// pmtsManager.add({
+		// 	url:'./sampleData/文化室2018z',
+		// 	autoFlyto:true
+		// })
+        // var cameraInfo = [111.524, 28.119, 5000.0, 0.0, -90.0, 0.0];
+        // var cameraInfo = [111.674 , 28.633, 5000.0, 0.0, -90.0, 0.0];
+        // Freedo.FdCamera.flyToByCameraInfo(viewer.scene.camera, cameraInfo) ;
+
+        // new Freedo.Timeline(document.getElementById("timeLineContainer"), new Freedo.Clock({
+        //        startTime : Freedo.JulianDate.fromIso8601("2013-12-25"),
+        //        currentTime : Freedo.JulianDate.fromIso8601("2015-10-19"),
+        //        stopTime : Freedo.JulianDate.fromIso8601("2018-12-26"),
+        //        clockRange : Freedo.ClockRange.LOOP_STOP,
+        //        clockStep : Freedo.ClockStep.SYSTEM_CLOCK_MULTIPLIER,
+        //        multiplier : 86400
+        // }))
+
+        // var times = Freedo.TimeIntervalCollection.fromIso8601({ 
+        //     iso8601: '2013-07-30/2017-06-16/P1M', 
+        //     leadingInterval: true, 
+        //     trailingInterval: true, 
+        //     isStopIncluded: false, 
+        //     dataCallback: dataCallback 
+        //     });
+
+        // function dataCallback(interval, index) { 
+        //     console.log(index); 
+        //     var time; 
+        //     if (index === 0) { 
+        //         time = Freedo.JulianDate.toIso8601(interval.stop); 
+        //     } else { 
+        //         time = Freedo.JulianDate.toIso8601(interval.start); 
+        //     } 
+        //     return { Time: time }; 
+        // }
+
+
+        // var provider = new Freedo.WebMapTileServiceImageryProvider({ url : 'https://gibs.earthdata.nasa.gov/wmts/epsg4326/{best}/{Layer}/{Style}/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png', 
+        //     layer : 'AMSR2_Snow_Water_Equivalent', 
+        //     style : 'default', 
+        //     tileMatrixSetID : '2km',
+        //     maximumLevel : 5, 
+        //     format : 'image/png',
+        //     clock: viewer.clock, 
+        //     times: times, 
+        //     credit : new Freedo.Credit({
+        //         text: 'NASA Global Imagery Browse Services for EOSDIS'
+        //     }),
+        //      dimensions: { 
+        //         Layer : 'AMSR2_Snow_Water_Equivalent',
+        //         best: 'best' 
+        //      }
+        //    });
+
+        // var imageryLayers = viewer.imageryLayers;
+        // imageryLayers.addImageryProvider(provider);
+
+        // var pm = new Freedo.FdMicroApp.FdPickPMComponent(viewer);
+        // pm.start();
+        // pm.setHighlightColor(224, 153, 56, 0.9);
+        // pm.setSingleMode(true);
+        // pm.setMode('HIGH_LIGHT');
+
+        viewer.extend(Freedo.FdTools.FdNavigationMixin, {});//控制器
+        var cameraContainer = document.getElementById('cameraContainer');
+        cameraInfoList = new Freedo.FdWidgets.FdCamera(viewer, cameraContainer);//相机信息
+
+        // var tileSet = viewer.scene.primitives.add(new Freedo.Cesium3DTileset({
+        //     url: './tile3d/tileset.json'
+        // }));
+
+        // tileSet.readyPromise.then(function (tileset) {
+        //     viewer.camera.viewBoundingSphere(tileset.boundingSphere, new Freedo.HeadingPitchRange(0, -0.5, 0));
+        //     viewer.camera.lookAtTransform(Freedo.Matrix4.IDENTITY);
+        // }).otherwise(function(error) {
+        //             console.log("cuowu")
+        //             console.log(error);
+        //         });
+
+        // var cameraInfo = [108.972459,34.225787, 5000, 0, -90, 0];
+        // Freedo.FdCamera.flyToByCameraInfo(viewer.scene.camera, cameraInfo) ;
+    </script>
+</body>
+
+</html>
