@@ -1,0 +1,9 @@
+.cesium-viewer-fullscreenContainer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0;
+    width: 29px;
+    height: 29px;
+    overflow: hidden;
+}
