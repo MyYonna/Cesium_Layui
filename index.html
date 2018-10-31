@@ -6,8 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>千园</title>
     <link rel="stylesheet" href="Cesium/Widgets/widgets.css">
-    <link rel="stylesheet" href="Cesium/DrawHelper.css">
-    <link rel="stylesheet" href="static/css/bucket.css">
     <link rel="stylesheet" href="static/css/qianyuan.css">
     <link rel="stylesheet" href="static/css/CesiumChange.css">
     <link rel="stylesheet" href="./layui/css/layui.css"/>
@@ -25,7 +23,6 @@
     <script type="text/javascript" src="Cesium/CesiumExt_Terrain.js"></script>
     <script type="text/javascript" src="Cesium/CesiumExt_3DTile.js"></script>
     <script type="text/javascript" src="Cesium/CesiumExt_Measure.js"></script>
-    <script type="text/javascript" src="Cesium/CesiumExt_DrawHelper.js"></script>
     <script type="text/javascript" src="static/js/ThirdParty/lodash/loadsh.min.js"></script>
     <script type="text/javascript" src="static/js/ThirdParty/Sandcastle-header.js"></script>
         <div id="credit"></div>
@@ -56,13 +53,6 @@
           <button class="layui-btn layui-btn-lg layui-btn-cancel"></button>
           <button class="layui-btn layui-btn-lg layui-btn-clear"></button>
         </div>
-        <div class="layui-btn-group layui-btn-plot">
-          <button class="layui-btn layui-btn-lg layui-btn-marker"></button>
-          <button class="layui-btn layui-btn-lg layui-btn-polyline"></button>
-          <button class="layui-btn layui-btn-lg layui-btn-polygon"></button>
-          <button class="layui-btn layui-btn-lg layui-btn-circle"></button>
-          <button class="layui-btn layui-btn-lg layui-btn-extent"></button>
-        </div>
     <script type="text/javascript">
         var viewer = Cesium.createDefaultViewer("cesiumContainer");
 
@@ -88,12 +78,11 @@
     </script>
     <script type="text/javascript" src="static/js/layui_parkInfo.js" ></script>
     <script type="text/javascript" src="static/js/layui_filed.js" ></script>
-  <!--   <script type="text/javascript" src="static/js/cesium_qianyuan_3dtile.js" ></script> -->
+  <!--   <script type="text/javascript" src="static/js/3dtile.js" ></script> -->
 
-    <script type="text/javascript" src="static/js/cesium_qianyuan_measure.js" ></script>
-    <script type="text/javascript" src="static/js/layui_plot.js" ></script>
-    <script type="text/javascript" src="static/js/cesium_qianyuan_terrain.js" ></script>
-    <script type="text/javascript" src="static/js/cesium_qianyuan_imagery.js" ></script>
+    <script type="text/javascript" src="static/js/layui_measure.js" ></script>
+    <script type="text/javascript" src="static/js/terrain.js" ></script>
+    <script type="text/javascript" src="static/js/imagery.js" ></script>
     <script type="text/javascript">
         
         Sandcastle.addToolbarButton("",function(){

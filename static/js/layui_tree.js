@@ -1,4 +1,4 @@
-layui.use(['layer','tree'], function(){ //独立版的layer无需执行这一句
+ layui.use(['layer','tree'], function(){ //独立版的layer无需执行这一句
   var $ = layui.jquery, layer = layui.layer; //独立版的layer无需执行这一句
 
  function openTreeWindow(){

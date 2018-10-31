@@ -41,12 +41,126 @@
 				break;
             case "Height":
                 this.startSpaceMeasure();
+            case "Angle":
+                this.startAngleMeasure();
                 break;
 			default:
 				// statements_def
 				break;
 		}
 	}
+    MeasureManager.prototype.transformWindowPositionToCartesian = function(position){
+                var feature = this.viewer.scene.pick(position); 
+                var cartesian = null
+                if(feature instanceof Cesium.Cesium3DTileFeature){ 
+                    if(this.viewer.scene.pickPositionSupported){
+                        cartesian = this.viewer.scene.pickPosition(position); 
+                    }else{
+                        alert("此浏览器不支持模型高度拾取！")
+                    }
+                }else{
+                    var ray = this.viewer.scene.camera.getPickRay(position); 
+                    cartesian = this.viewer.scene.globe.pick(ray,this.viewer.scene); 
+                }
+                return cartesian;
+    }
+    MeasureManager.prototype.startAngleMeasure = function(){
+            var _this = this;
+            var tempPoints = [];
+            var positions = [];
+            var poly = null;
+            _this.tooltip = this.createToolTip();
+            var cartesian = null;
+            this.handler = new Cesium.ScreenSpaceEventHandler(this.scene.canvas);
+            
+            this.handler.setInputAction(function (movement) {
+                cartesian = _this.transformWindowPositionToCartesian(movement.position);
+                positions = [];
+                if (cartesian) {
+                    if(tempPoints.length < 2){
+                        tempPoints.push(cartesian);
+                        positions.push(cartesian);
+                        positions.push(cartesian.clone());
+                        _this.drawPoint(cartesian);
+                    }
+                    poly = null;
+                } 
+            }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+            this.handler.setInputAction(function(movement){
+                _this.tooltip.style.left = movement.endPosition.x + 3 + "px";
+                _this.tooltip.style.top = movement.endPosition.y - 25 + "px";
+                _this.tooltip.innerHTML ='<p>单击开始，双击结束</p>';
+
+                cartesian = _this.transformWindowPositionToCartesian(movement.endPosition);
+
+                if(positions.length == 2){
+                    if (!Cesium.defined(poly)) {
+                        poly = new ClampPolyLinePrimitive(positions);
+                    } else{
+                        positions.pop(); //弹出之前的存在的点                   
+                        positions.push(cartesian);//放入这一次的点
+                    
+                    }
+                     var radian = Cesium.Cartesian3.angleBetween(positions[0],positions[1]);
+                     _this.tooltip.innerHTML ='<p>线段北方向夹角：'+radian +'米</p>';
+                }
+            },Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+
+            this.handler.setInputAction(function (movement) {
+                    cartesian = _this.transformWindowPositionToCartesian(movement.position);
+                    tempPoints.push(cartesian);
+                    var tempLength = tempPoints.length 
+                    if (tempLength  < 3) {
+                        alert('请选择3个以上的点再执行操作命令');
+                    } else {       
+                        var position_last = [];
+                        position_last.push(tempPoints[tempLength-1]);
+                        position_last.push(tempPoints[tempLength-2]);
+                        _this.drawLine(position_last);
+                        _this.drawPoint(tempPoints[tempLength-1]);
+
+                        var radian1 = Cesium.Cartesian3.angleBetween(tempPoints[0],tempPoints[1]);
+                        var radian2 = Cesium.Cartesian3.angleBetween(tempPoints[1],tempPoints[2]);
+                        var radian = Math.abs(radian2-radian1);
+                        console.log(Cesium.Math.toRadians(radian));
+                        _this.drawLabel(tempPoints[1],radian.toFixed(5) );
+                        tempPoints = [];
+                        _this.clearEffects();
+                }
+            }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
+            var ClampPolyLinePrimitive = (function (_this) {
+                function ClampPolyLinePrimitive(positions) {
+                    this.options = {
+                        name: '直线',
+                        polyline: {
+                            show: true,
+                            positions: [],
+                            material: Cesium.Color.CHARTREUSE,
+                            width: 2,
+                            clampToGround:true
+                        }
+                    };
+                    this.positions = positions;
+                    this._init();
+                }
+         
+                ClampPolyLinePrimitive.prototype._init = function () {
+                    var _self = this;
+                    var _update = function () {
+                        return _self.positions;
+                    };
+                    //实时更新polyline.positions
+                    this.options.polyline.positions = new Cesium.CallbackProperty(_update, false);
+                    
+                    _this.tempEntities.push(_this.tempEntity = _this.viewer.entities.add(this.options));
+                };
+                return ClampPolyLinePrimitive;
+            })(_this); 
+    }
+
     MeasureManager.prototype.startPickPosition = function(){
         var _this = this;
         this.handler = new Cesium.ScreenSpaceEventHandler(this.scene.canvas);
@@ -54,7 +168,7 @@
         var cartesian = null;
         this.handler.setInputAction(function(movement){
             _this.tooltip.style.left = movement.endPosition.x - 50 + "px";
-            _this.tooltip.style.top = movement.endPosition.y - 70 + "px";
+            _this.tooltip.style.top = movement.endPosition.y - 80 + "px";
             _this.tooltip.innerHTML ='<p>双击结束</p>';
             
             var feature = _this.viewer.scene.pick(movement.endPosition); 
@@ -80,44 +194,14 @@
         this.handler.setInputAction(function (movement) {
                 _this.tooltip.style.display = 'none'
                 _this.clearEffects();
-                var entity = {
-                    name : '起点',
-                    position : cartesian,                
-                    point : {
-                        pixelSize : 5,
-                        color : Cesium.Color.RED,
-                        outlineColor : Cesium.Color.WHITE,
-                        outlineWidth : 2,
-                        heightReference:Cesium.HeightReference.CLAMP_TO_GROUND
-                    }
-                }
-                _this.tempEntities.push(_this.viewer.entities.add(entity));
+                _this.drawBillboard(cartesian)
 
                 var cartographic = _this.scene.globe.ellipsoid.cartesianToCartographic(cartesian);
                 var longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(2);
                 var latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(2);
                 var height = cartographic.height.toFixed(2);
-                var entity_label = {
-                    name : '坐标信息',
-                    position : cartesian,         
-                    label:{
-                            text : "经度："+longitude+"\n纬度："+latitude+"\n高度："+height,
-                            font : '15px sans-serif',
-                            fillColor : new Cesium.Color(1, 1, 1, 1),
-                            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                            outlineWidth : 2,
-                            verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
-                            pixelOffset : new Cesium.Cartesian2(-50, -10),
-                            showBackground:true,
-                            backgroundColor:new Cesium.Color(52/255, 61/255, 70/255, 0.9),
-                            backgroundPadding:new Cesium.Cartesian2(7, 5),
-                            horizontalOrigin:Cesium.HorizontalOrigin.LEFT,
-                            heightReference:Cesium.HeightReference.CLAMP_TO_GROUND
-
-                    }
-                };
-              _this.tempEntities.push(_this.viewer.entities.add(entity_label));
-
+                var text = "经度："+longitude+"\n纬度："+latitude+"\n高度："+height;
+                _this.drawLabel(cartesian,text)
             }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
     }
 
@@ -189,54 +273,22 @@
                     if (tempLength < 3) {
                         alert('请选择3个以上的点再执行闭合操作命令');
                     } else {
+                        //补齐缺失的线
                         var position_last2 = [];
                         position_last2.push(tempPoints[tempLength-1]);
                         position_last2.push(tempPoints[tempLength-2]);
-                        _this.tempEntities.push(_this.viewer.entities.add({
-                                    name: '直线',
-                                    polyline: {
-                                        show: true,
-                                        positions: position_last2,
-                                        material: Cesium.Color.CHARTREUSE,
-                                        width: 2,
-                                        clampToGround:true
-                                    }
-                          }));
+                        _this.drawLine(position_last2);
+
                         var position_last = [];
                         position_last.push(tempPoints[0]);
                         position_last.push(tempPoints[tempLength-1]);
-                        _this.tempEntities.push(_this.viewer.entities.add({
-                                    name: '直线',
-                                    polyline: {
-                                        show: true,
-                                        positions: position_last,
-                                        material: Cesium.Color.CHARTREUSE,
-                                        width: 2,
-                                        clampToGround:true
-                                    }
-                          }));
-                        var entity = _this.viewer.entities.add({
-                            polygon: {
-                                hierarchy: new Cesium.PolygonHierarchy(tempPoints),
-                                material: Cesium.Color.DODGERBLUE.withAlpha(.5),
-                                heightReference:Cesium.HeightReference.CLAMP_TO_GROUND,
-                                outline:true,
-                                outlineColor:Cesium.Color.CHARTREUSE,
-                                outlineWidth:2
-                            }
-                        });
-                        _this.tempEntities.push(entity);
+                        _this.drawLine(position_last);
 
-                        // var ent = _this.viewer.entities.add({
-                        //           position: Cesium.Cartesian3.fromDegrees(((_this.tempPoints[0].lon +(_this.tempPoints[_this.tempPoints.length-1].lon+ _this.tempPoints[_this.tempPoints.length-2].lon)/2)/2 ),
-                        //           ((_this.tempPoints[0].lat +(_this.tempPoints[_this.tempPoints.length-1].lat+_this.tempPoints[_this.tempPoints.length -2].lat)/2 )/2)),
-                        //           label: {
-                        //               text: _this.SphericalPolygonAreaMeters(_this.tempPoints) .toFixed(1) + '㎡',
-                        //               font: '22px Helvetica',
-                        //               fillColor: Cesium.Color.BLACK
-                        //           }
-                        //       });
-                        // _this.tempEntities.push(ent);
+                        _this.drawPolygon(tempPoints);
+
+                        var area = computeArea(tempPoints);
+                        _this.drawLabel(tempPoints[tempPoints.length-1],area.toFixed(1) + '㎡');
+
                         tempPoints = [];
                         _this.clearEffects();
                 }
@@ -271,6 +323,31 @@
                 return ClampPolyLinePrimitive;
             })(_this); 
 
+            //计算三角的面积，三角在同一个平面内
+            function computeAreaOfTriangle(pos1, pos2, pos3){
+                var a = Cesium.Cartesian3.distance(pos1, pos2);
+                var b = Cesium.Cartesian3.distance(pos2, pos3);
+                var c = Cesium.Cartesian3.distance(pos3, pos1);
+
+                var S = (a + b + c) / 2;
+
+                return Math.sqrt(S * (S - a) * (S - b) * (S - c));
+            }
+            //计算cut面积
+            function computeArea(positions){
+                var cartesian_0 = positions[0];
+                var length = positions.length;
+                var count = length-2;
+                var totalArea = 0;
+                for(var i=0;i<count;i++){
+                    var cartesian_1 = positions[i+1];
+                    var cartesian_2 = positions[i+2];
+                    var area = computeAreaOfTriangle(cartesian_0, cartesian_1, cartesian_2);
+                    totalArea +=area;
+                }
+                return totalArea;
+            }
+
 	}
 
     MeasureManager.prototype.clearEffects = function() {
@@ -288,6 +365,7 @@
                 this.tooltip.style.display = 'none';
             }
             this.handler.destroy();
+            this.scene.screenSpaceCameraController.enableRotate = enable;
         }
     }
 
@@ -306,7 +384,78 @@
         });
         this.tempEntities.push(entity);
     }
+    /*画label*/
+    MeasureManager.prototype.drawLabel = function(cartesian,text){
+        var entity = 
+        this.viewer.entities.add({
+            position : cartesian,         
+            label:{
+                    text : text,
+                    font : '15px sans-serif',
+                    fillColor : new Cesium.Color(1, 1, 1, 1),
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    outlineWidth : 2,
+                    pixelOffset : new Cesium.Cartesian2(0, -50),
+                    showBackground:true,
+                    backgroundColor:new Cesium.Color(48/255, 51/255, 54/255, 1),
+                    backgroundPadding:new Cesium.Cartesian2(7, 5),
+                    horizontalOrigin : Cesium.HorizontalOrigin.CENTER,
+                    verticalOrigin : Cesium.VerticalOrigin.CENTER,
+                    heightReference:Cesium.HeightReference.CLAMP_TO_GROUND
 
+            }
+        });
+        this.tempEntities.push(entity);
+           
+    };
+    /*画标牌*/
+    MeasureManager.prototype.drawBillboard = function(cartesian) {
+        var entity = 
+        this.viewer.entities.add({
+            position:cartesian,
+            billboard:{
+                image:'./Cesium/Image/position.png',
+                show : true,
+                pixelOffset : new Cesium.Cartesian2(0, 0),
+                eyeOffset : new Cesium.Cartesian3(0.0, 0.0, 0.0),
+                horizontalOrigin : Cesium.HorizontalOrigin.CENTER,
+                verticalOrigin : Cesium.VerticalOrigin.CENTER,
+                heightReference:Cesium.HeightReference.CLAMP_TO_GROUND,
+                scale : 1.0,
+                color : new Cesium.Color(1.0, 1.0, 1.0, 1.0)
+            }
+        });
+        this.tempEntities.push(entity);
+    }
+    /*画线*/
+    MeasureManager.prototype.drawLine = function(positions) {
+        var entity = 
+        this.viewer.entities.add({
+                polyline: {
+                    show: true,
+                    positions: positions,
+                    material: Cesium.Color.CHARTREUSE,
+                    width: 2,
+                    clampToGround:true
+                }
+        });
+        this.tempEntities.push(entity);
+    }
+    /*画面*/
+    MeasureManager.prototype.drawPolygon = function(positions) {
+        var entity = 
+        this.viewer.entities.add({
+                polygon: {
+                    hierarchy: new Cesium.PolygonHierarchy(positions),
+                    material: Cesium.Color.DODGERBLUE.withAlpha(.5),
+                    heightReference:Cesium.HeightReference.CLAMP_TO_GROUND,
+                    outline:true,
+                    outlineColor:Cesium.Color.CHARTREUSE,
+                    outlineWidth:2
+                }
+        });
+        this.tempEntities.push(entity);
+    }
     //计算多边形面积
     var earthRadiusMeters = 6371000.0;
     var radiansPerDegree = Math.PI / 180.0;
@@ -314,23 +463,6 @@
 
 
 
-    MeasureManager.prototype.SphericalPolygonAreaMeters = function(points) {
-        var totalAngle = 0;
-        for (var i = 0; i < points.length; i++) {
-            var j = (i + 1) % points.length;
-            var k = (i + 2) % points.length;
-            totalAngle += this.Angle(points[i], points[j], points[k]);
-        }
-        var planarTotalAngle = (points.length - 2) * 180.0;
-        var sphericalExcess = totalAngle - planarTotalAngle;
-        if (sphericalExcess > 420.0) {
-            totalAngle = points.length * 360.0 - totalAngle;
-            sphericalExcess = totalAngle - planarTotalAngle;
-        } else if (sphericalExcess > 300.0 && sphericalExcess < 420.0) {
-            sphericalExcess = Math.abs(360.0 - sphericalExcess);
-        }
-        return sphericalExcess * radiansPerDegree * earthRadiusMeters * earthRadiusMeters;
-    }
 
     /*角度*/
      MeasureManager.prototype.Angle = function(p1, p2, p3) {
@@ -344,16 +476,7 @@
     }
     /*方向*/
     MeasureManager.prototype.Bearing = function(from, to) {
-        var lat1 = from.lat * radiansPerDegree;
-        var lon1 = from.lon * radiansPerDegree;
-        var lat2 = to.lat * radiansPerDegree;
-        var lon2 = to.lon * radiansPerDegree;
-        var angle = -Math.atan2(Math.sin(lon1 - lon2) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon1 - lon2));
-        if (angle < 0) {
-            angle += Math.PI * 2.0;
-        }
-        angle = angle * degreesPerRadian;
-        return angle;
+            return Cesium.Cartesian3.angleBetween(from, to)
     }
     /**
      * 清除地图痕迹
@@ -379,6 +502,7 @@
         tooltip.style.display = 'block';
         return tooltip;
     };
+
     MeasureManager.prototype.startClampGroundPolyline = function(){
         var _this = this;
         _this.handler = new Cesium.ScreenSpaceEventHandler(_this.scene.canvas);
@@ -456,7 +580,7 @@
         _this.handler.setInputAction(function(movement){
            //销毁handler
            _this.tempEntity = null;
-            _this.clearEffects();
+           _this.clearEffects();
 
             var point1cartographic =_this.scene.globe.ellipsoid.cartesianToCartographic(positions[0]);
             var point2cartographic =_this.scene.globe.ellipsoid.cartesianToCartographic(positions[1]);
@@ -525,6 +649,7 @@
                 return ClampPolyLinePrimitive;
             })(_this); 
 
+            
     }
 
 
@@ -758,5 +883,8 @@
             return Math.abs(height_temp.toFixed(2));              
         }
     }
+
+
+
     Cesium.MeasureManager = MeasureManager;
 })(Cesium)
