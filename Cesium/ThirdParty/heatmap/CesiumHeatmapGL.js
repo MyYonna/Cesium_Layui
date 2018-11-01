@@ -57,7 +57,7 @@ var CesiumHeatmapGL = (function(Cesium,createWebGLHeatmap){
             data.features.forEach(function(feature){
                 var x = (feature.geometry.coordinates[0]-extent.xMin)/(extent.xMax-extent.xMin)*heatmapcanvas.clientWidth;
                 var y = (-(feature.geometry.coordinates[1]-extent.yMin)/(extent.yMax-extent.yMin)+1)*heatmapcanvas.clientHeight;
-                heatmap.addPoint(x, y, 20, 0.05);
+                heatmap.addPoint(x, y, 3, 0.02);
             });
             heatmap.adjustSize(); 
             heatmap.update();
@@ -71,7 +71,7 @@ var CesiumHeatmapGL = (function(Cesium,createWebGLHeatmap){
 
 	CHGL.prototype.drawHeatmapRect = function(canvas,extent) {
 		var image = convertCanvasToImage(canvas);
-		this._worldRectangle = this._viewer.scene.primitives.add(new Cesium.Primitive({
+		this._worldRectangle = this._viewer.scene.primitives.add(new Cesium.GroundPrimitive({
 			geometryInstances : new Cesium.GeometryInstance({
 				geometry : new Cesium.RectangleGeometry({
 					rectangle : Cesium.Rectangle.fromDegrees(extent.xMin, extent.yMin, extent.xMax, extent.yMax),
@@ -79,7 +79,7 @@ var CesiumHeatmapGL = (function(Cesium,createWebGLHeatmap){
 				})
 			}),
 			appearance : new Cesium.EllipsoidSurfaceAppearance({
-				aboveGround : false
+				aboveGround : true
 			}),
 			show : true
 		}));
