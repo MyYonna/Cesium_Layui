@@ -1,0 +1,1 @@
+var heatmap = new CesiumHeatmapGL(viewer,'./static/data/geojson.json');
